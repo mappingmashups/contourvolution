@@ -301,19 +301,19 @@ function contourOpacity() {
 // In min-spacing mode, line width is derived from spacingBuffer * widthFactor (at z12) and grows
 // exponentially as 2^(zoom-12) to track tile scale between integer zooms.
 // shadeClass multipliers: 3 (dark-shadow)=1×, 2 (shadow)=½, 1 (neutral)=¼, 0 (highlight)=⅛.
+// The zoom interpolate must be the outermost expression (MapLibre restriction); shade-class and
+// level matching are folded into each stop's output so they can vary per feature.
 function contourWidth() {
   const w = styleParams.lineWidth;
   const darkW = tileParams.spacingBuffer * styleParams.widthFactor;
-  const zoomWidth = ["interpolate", ["exponential", 2], ["zoom"],
-    6,  darkW * Math.pow(2, 6 - 12),
-    16, darkW * Math.pow(2, 16 - 12),
-  ];
-  return [
-    "case",
-    ["has", "shadeClass"],
-    ["*", ["match", ["get", "shadeClass"], 0, 0.125, 1, 0.25, 2, 0.5, 1], zoomWidth],
+  // Shade-class widths at the two anchor zooms; exponential base-2 gives darkW * 2^(zoom-12).
+  const d6  = darkW * Math.pow(2, 6  - 12);
+  const d16 = darkW * Math.pow(2, 16 - 12);
+  const shadeStop = (d) => ["case", ["has", "shadeClass"],
+    ["match", ["get", "shadeClass"], 0, d * 0.125, 1, d * 0.25, 2, d * 0.5, d],
     ["match", ["get", "level"], 1, w * 1.8, w],
   ];
+  return ["interpolate", ["exponential", 2], ["zoom"], 6, shadeStop(d6), 16, shadeStop(d16)];
 }
 
 // --- Controls
