@@ -1,0 +1,25 @@
+{
+  "name": "contour-hillshade",
+  "version": "1.0.0",
+  "description": "Dynamic contours + vector hillshade from Mapterhorn DEM tiles",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "d3-contour": "^4.0.2",
+    "lil-gui": "^0.21.0",
+    "maplibre-contour": "^0.1.1",
+    "maplibre-gl": "^6.16.0",
+    "pbf": "^5.1.2"
+  },
+  "devDependencies": {
+    "vite": "^8.3.5"
+  },
+  "type": "module",
+  "private": true
+}
