@@ -24,7 +24,7 @@ const tileParams = {
   fullDensityFrom: 2, // every line appears from this shadow class
   minPieceLength: 3, // drop clipped line fragments shorter than this, grid px
   // --- Minimum-spacing params ---
-  minSpacingInterval: 20, // metres between contours at z12 (doubles per zoom out)
+  minSpacingInterval: 5, // metres between contours at z12 (doubles per zoom out)
   midpoint: 4000,       // reference elevation for binary subdivision priority (m)
   spacingBuffer: 5,     // exclusion buffer around each drawn line (screen px)
   showExcluded: false,  // debug: render excluded fragments in red
@@ -161,7 +161,6 @@ map.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
 let hashTimer;
 map.on("moveend", () => { clearTimeout(hashTimer); hashTimer = setTimeout(writeHash, 300); });
-
 // Tile rebuild — debounced so rapid slider changes don't spam the worker pool.
 let rebuildTimer;
 function rebuild() {
@@ -177,6 +176,10 @@ let azimuthCtrl, altitudeCtrl;
 
 function startLightAnimation() {
   if (animInterval) return;
+  // Back-solve animAngle from the current azimuth so tick #1 continues from here.
+  // azimuth = ((60 * sin(angle) + 360) % 360), so sin(angle) = (azimuth >= 180 ? azimuth-360 : azimuth) / 60.
+  const aOffset = tileParams.azimuth >= 180 ? tileParams.azimuth - 360 : tileParams.azimuth;
+  animAngle = Math.asin(Math.max(-1, Math.min(1, aOffset / 60))) - 0.2;
   animInterval = setInterval(() => {
     animAngle += 0.2;                                                     // full azimuth cycle ≈ 31 s
     tileParams.azimuth   = Math.round(((60 * Math.sin(animAngle)) + 360) % 360);
@@ -285,17 +288,36 @@ map.on("load", () => {
     },
     firstSymbol,
   );
+  // One layer per shade class (min-spacing mode). Pure zoom expressions in each — no
+  // feature-property lookups inside the interpolate stop values — so MapLibre interpolates cleanly.
+  MS_SHADE_LAYERS.forEach((id, i) => {
+    map.addLayer({
+      id,
+      type: "line",
+      source: "terrain-vector",
+      "source-layer": "contours",
+      filter: ["all", ["==", ["get", "shadeClass"], i], ["!=", ["get", "excluded"], true]],
+      layout: { "line-cap": "round" },
+      paint: {
+        "line-color": styleParams.contourColor,
+        "line-opacity": 1,
+        "line-width": sawtoothWidth(MS_MULTS[i]),
+      },
+    }, firstSymbol);
+  });
+
+  // Base contours layer: density / standard mode features (no shadeClass property).
   map.addLayer(
     {
       id: "contours",
       type: "line",
       source: "terrain-vector",
       "source-layer": "contours",
-      filter: ["!=", ["get", "excluded"], true],
+      filter: ["all", ["!=", ["get", "excluded"], true], ["!", ["has", "shadeClass"]]],
       layout: { "line-cap": "round" },
       paint: {
         "line-color": styleParams.contourColor,
-        "line-opacity": contourOpacity(),
+        "line-opacity": styleParams.lineOpacity,
         "line-width": contourWidth(),
       },
     },
@@ -323,28 +345,30 @@ map.on("load", () => {
   buildGui();
 });
 
-// Shade-class features (min-spacing mode) are always fully opaque; other modes respect lineOpacity.
-function contourOpacity() {
-  return ["case", ["has", "shadeClass"], 1, styleParams.lineOpacity];
+// Four style layers, one per shade class, for min-spacing mode.
+// Keeping feature-property lookups out of the interpolate stop values lets MapLibre
+// interpolate correctly — each stop is a plain number, not a data-driven sub-expression.
+const MS_SHADE_LAYERS = ["contours-ms-0", "contours-ms-1", "contours-ms-2", "contours-ms-3"];
+const MS_MULTS        = [0.125, 0.25, 0.5, 1.0]; // highlight → dark-shadow
+
+function sawtoothWidth(mult) {
+  const base = tileParams.spacingBuffer * styleParams.widthFactor * mult;
+  const stops = [];
+  for (let z = 0; z <= 20; z++) {
+    stops.push(z, base);
+    if (z < 20) stops.push(z + 0.999, base * 2);
+  }
+  return ["interpolate", ["exponential", 2], ["zoom"], ...stops];
 }
 
-// Index lines (level 1) are drawn thicker; density mode emits only level 0, so all lines match.
-// In min-spacing mode, line width is derived from spacingBuffer * widthFactor (at z12) and grows
-// exponentially as 2^(zoom-12) to track tile scale between integer zooms.
-// shadeClass multipliers: 3 (dark-shadow)=1×, 2 (shadow)=½, 1 (neutral)=¼, 0 (highlight)=⅛.
-// The zoom interpolate must be the outermost expression (MapLibre restriction); shade-class and
-// level matching are folded into each stop's output so they can vary per feature.
+function applyMinSpacingWidths() {
+  MS_SHADE_LAYERS.forEach((id, i) => map.setPaintProperty(id, "line-width", sawtoothWidth(MS_MULTS[i])));
+}
+
+// Width for the base contours layer (density / standard modes — no shade class).
 function contourWidth() {
   const w = styleParams.lineWidth;
-  const darkW = tileParams.spacingBuffer * styleParams.widthFactor;
-  // Shade-class widths at the two anchor zooms; exponential base-2 gives darkW * 2^(zoom-12).
-  const d6  = darkW * Math.pow(2, 6  - 12);
-  const d16 = darkW * Math.pow(2, 16 - 12);
-  const shadeStop = (d) => ["case", ["has", "shadeClass"],
-    ["match", ["get", "shadeClass"], 0, d * 0.125, 1, d * 0.25, 2, d * 0.5, d],
-    ["match", ["get", "level"], 1, w * 1.8, w],
-  ];
-  return ["interpolate", ["exponential", 2], ["zoom"], 6, shadeStop(d6), 16, shadeStop(d16)];
+  return ["match", ["get", "level"], 1, w * 1.8, w];
 }
 
 // --- Controls
@@ -373,12 +397,10 @@ function buildGui() {
     c.add(tileParams, "minSpacingInterval", 1, 200, 1).name("interval @z12 (m)").onChange(rebuild),
     c.add(tileParams, "midpoint", 0, 8000, 100).name("midpoint (m)").onChange(rebuild),
     c.add(tileParams, "spacingBuffer", 1, 20, 0.5).name("spacing buffer (px)").onChange(() => {
-      map.setPaintProperty("contours", "line-width", contourWidth());
+      applyMinSpacingWidths();
       rebuild();
     }),
-    c.add(styleParams, "widthFactor", 0, 3, 0.05).name("width factor").onChange(() =>
-      map.setPaintProperty("contours", "line-width", contourWidth())
-    ),
+    c.add(styleParams, "widthFactor", 0, 10, 0.05).name("width factor").onChange(applyMinSpacingWidths),
     c.add(tileParams, "showExcluded").name("show excluded (red)").onChange((v) => {
       map.setLayoutProperty("contours-excluded", "visibility", v ? "visible" : "none");
       rebuild();
@@ -390,10 +412,11 @@ function buildGui() {
     map.setPaintProperty("contours", "line-width", contourWidth()),
   );
   c.add(styleParams, "lineOpacity", 0.05, 1, 0.05).name("line opacity").onChange(() =>
-    map.setPaintProperty("contours", "line-opacity", contourOpacity()),
+    map.setPaintProperty("contours", "line-opacity", styleParams.lineOpacity),
   );
   c.addColor(styleParams, "contourColor").name("color").onChange((v) => {
     map.setPaintProperty("contours", "line-color", v);
+    MS_SHADE_LAYERS.forEach(id => map.setPaintProperty(id, "line-color", v));
     map.setPaintProperty("contour-labels", "text-color", v);
   });
 
@@ -443,8 +466,26 @@ function buildGui() {
 
 const statusEl = document.getElementById("status");
 let tiles = 0, total = 0;
+
+function updateStatus() {
+  const z = map.getZoom();
+  let text = `z${z.toFixed(2)}`;
+  if (tiles > 0) text += ` · ${tiles} tiles · avg ${(total / tiles).toFixed(0)} ms/tile`;
+
+  if (tileParams.contourMode === "minspacing") {
+    const tileZoom = Math.min(Math.floor(z), DEM_MAXZOOM);
+    const interval = Math.max(1, Math.round(tileParams.minSpacingInterval * Math.pow(2, 12 - tileZoom)));
+    const darkLineWidth = tileParams.spacingBuffer * styleParams.widthFactor * Math.pow(2, z - Math.floor(z));
+    text += ` · ${interval}m contours · ${tileParams.spacingBuffer}px buffer · ${darkLineWidth.toFixed(2)}px dark line`;
+  }
+
+  statusEl.textContent = text;
+}
+
 function reportTiming(ms) {
   tiles++;
   total += ms;
-  statusEl.textContent = `z${map.getZoom().toFixed(1)} · ${tiles} tiles · avg ${(total / tiles).toFixed(0)} ms/tile in worker`;
+  updateStatus();
 }
+
+map.on("zoom", updateStatus);
