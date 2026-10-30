@@ -11,11 +11,44 @@
         position: absolute; left: 10px; bottom: 30px; padding: 4px 8px;
         background: rgb(255 255 255 / 0.85); border-radius: 4px; font-size: 12px;
       }
+      #info {
+        position: absolute; top: 10px; left: 10px; width: 280px;
+        background: rgb(255 255 255 / 0.92); border-radius: 6px;
+        padding: 14px 16px; font-size: 13px; line-height: 1.5;
+        box-shadow: 0 1px 6px rgb(0 0 0 / 0.15);
+        color: #2a2a2a;
+      }
+      #info h1 {
+        margin: 0 0 6px; font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
+      }
+      #info p { margin: 0 0 8px; }
+      #info p:last-child { margin: 0; }
+      #info strong { font-weight: 600; color: #1a1a1a; }
+      #info a { color: #4a7fa5; text-decoration: none; }
+      #info a:hover { text-decoration: underline; }
+      #info .modes { margin: 8px 0; padding: 8px 10px; background: rgb(0 0 0 / 0.04);
+        border-radius: 4px; display: flex; flex-direction: column; gap: 6px; }
+      #info .mode-name { font-weight: 600; }
     </style>
   </head>
   <body>
     <div id="map"></div>
     <div id="status"></div>
+    <div id="info">
+      <h1>Contourvolution</h1>
+      <p>Contour lines and hillshade generated entirely in the browser, per tile, as vector
+      geometry — no pre-rendered rasters. Elevation data from
+      <a href="https://mapterhorn.com" target="_blank">Mapterhorn</a>.</p>
+      <p>Try the two experimental contour modes in the panel →</p>
+      <div class="modes">
+        <div><span class="mode-name">Shadow Density</span> — line density encodes terrain
+        steepness: more lines in shadow, fewer in light.</div>
+        <div><span class="mode-name">Minimum Spacing</span> — contours are drawn in priority
+        order (by elevation subdivision) and masked wherever they crowd together.</div>
+      </div>
+      <p><a href="https://github.com/mappingmashups/contourvolution#readme"
+        target="_blank">Read more on GitHub →</a></p>
+    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

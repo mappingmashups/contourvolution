@@ -50,7 +50,9 @@ export function buildVectorTile({ z, x, y, raw, size, buffer, tileSize, params }
       features: buildContours(raw, size, buffer, tileSize, {
         z, x, y,
         extent: EXTENT,
-        levels: densityMode ? [denseIntervalForZoom(params, z)] : levelsForZoom(params.thresholds, z),
+        levels: densityMode ? [denseIntervalForZoom(params, z)]
+              : minSpacingMode ? [denseIntervalForZoom({ denseInterval: params.minSpacingInterval }, z)]
+              : levelsForZoom(params.thresholds, z),
         multiplier: params.multiplier,
         contourBuffer: params.contourBuffer,
         density: densityMode && {

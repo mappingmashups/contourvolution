@@ -24,6 +24,7 @@ const tileParams = {
   fullDensityFrom: 2, // every line appears from this shadow class
   minPieceLength: 3, // drop clipped line fragments shorter than this, grid px
   // --- Minimum-spacing params ---
+  minSpacingInterval: 20, // metres between contours at z12 (doubles per zoom out)
   midpoint: 4000,       // reference elevation for binary subdivision priority (m)
   spacingBuffer: 5,     // exclusion buffer around each drawn line (screen px)
   showExcluded: false,  // debug: render excluded fragments in red
@@ -53,7 +54,7 @@ const styleParams = {
   shadowOpacity: 0.14,
   highlightColor: "#fffbe8",
   highlightOpacity: 0.35,
-  contourColor: "#8a6a4a",
+  contourColor: "#d1c0a8",
   lineWidth: 0.6, // every line in density mode; minor lines in standard mode
   lineOpacity: 0.7,
   widthFactor: 1, // min-spacing only: dark-shadow width = spacingBuffer * widthFactor at z12
@@ -160,6 +161,36 @@ map.addControl(new maplibregl.ScaleControl(), "bottom-left");
 
 let hashTimer;
 map.on("moveend", () => { clearTimeout(hashTimer); hashTimer = setTimeout(writeHash, 300); });
+
+// Tile rebuild — debounced so rapid slider changes don't spam the worker pool.
+let rebuildTimer;
+function rebuild() {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => map.getSource("terrain-vector")?.setTiles([tileUrl()]), 250);
+}
+
+// --- Light animation
+// Sweeps azimuth ±60° around North (upper-left → upper-right) with a slower altitude wobble.
+let animInterval = null;
+let animAngle = 0;
+let azimuthCtrl, altitudeCtrl;
+
+function startLightAnimation() {
+  if (animInterval) return;
+  animInterval = setInterval(() => {
+    animAngle += 0.2;                                                     // full azimuth cycle ≈ 31 s
+    tileParams.azimuth   = Math.round(((60 * Math.sin(animAngle)) + 360) % 360);
+    tileParams.altitude  = Math.round(45 + 15 * Math.sin(animAngle * 0.6)); // altitude wobble ≈ 52 s
+    azimuthCtrl?.updateDisplay();
+    altitudeCtrl?.updateDisplay();
+    rebuild();
+  }, 1000);
+}
+
+function stopLightAnimation() {
+  clearInterval(animInterval);
+  animInterval = null;
+}
 
 map.on("load", () => {
   const firstSymbol = map.getStyle().layers.find((l) => l.type === "symbol")?.id;
@@ -319,11 +350,6 @@ function contourWidth() {
 // --- Controls
 function buildGui() {
   const gui = new GUI({ title: "Terrain" });
-  let timer;
-  const rebuild = () => {
-    clearTimeout(timer);
-    timer = setTimeout(() => map.getSource("terrain-vector").setTiles([tileUrl()]), 250);
-  };
   const paint = (layer, prop) => (value) => map.setPaintProperty(layer, prop, value);
 
   const c = gui.addFolder("Contours");
@@ -344,6 +370,7 @@ function buildGui() {
 
   // Minimum-spacing controls
   const msControls = [
+    c.add(tileParams, "minSpacingInterval", 1, 200, 1).name("interval @z12 (m)").onChange(rebuild),
     c.add(tileParams, "midpoint", 0, 8000, 100).name("midpoint (m)").onChange(rebuild),
     c.add(tileParams, "spacingBuffer", 1, 20, 0.5).name("spacing buffer (px)").onChange(() => {
       map.setPaintProperty("contours", "line-width", contourWidth());
@@ -379,10 +406,14 @@ function buildGui() {
 
   const light = gui.addFolder("Hillshade · light");
   light.add(tileParams, "hillshade").name("generate").onChange(rebuild);
-  light.add(tileParams, "azimuth", 0, 360, 1).onChange(rebuild);
-  light.add(tileParams, "altitude", 10, 80, 1).onChange(rebuild);
+  azimuthCtrl  = light.add(tileParams, "azimuth", 0, 360, 1).onChange(rebuild);
+  altitudeCtrl = light.add(tileParams, "altitude", 10, 80, 1).onChange(rebuild);
   light.add(tileParams, "exaggeration", 0.25, 5, 0.05).onChange(rebuild);
   light.add(tileParams, "zoomBoost", 1, 2, 0.05).name("low-zoom boost").onChange(rebuild);
+  const animToggle = { animate: false };
+  light.add(animToggle, "animate").name("animate light").onChange((v) => {
+    if (v) startLightAnimation(); else stopLightAnimation();
+  });
 
   const bands = gui.addFolder("Hillshade · bands");
   tileParams.shadowLevels.forEach((_, i) =>
