@@ -383,7 +383,7 @@ function updateModeControls() {
 }
 
 function buildGui() {
-  const gui = new GUI({ title: "Terrain" });
+  const gui = new GUI({ title: "Advanced controls" });
   const paint = (layer, prop) => (value) => map.setPaintProperty(layer, prop, value);
 
   const c = gui.addFolder("Contours");
