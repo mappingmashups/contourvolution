@@ -4,7 +4,7 @@
 
 Contour line experiments, generated dynamically using vector contours + vector hillshade (and data from the [Mapterhorn](https://mapterhorn.com/) DEM tiles)
 
-Based on the maplibre-contour demo (makewithmaplibre.com/plugins/maplibre-contour). Both
+Based on the [maplibre-contour demo](makewithmaplibre.com/plugins/maplibre-contour). Both
 contour lines and the hillshade are produced in the browser, per tile, as vector
 geometry. Nothing is pre-rendered.
 
