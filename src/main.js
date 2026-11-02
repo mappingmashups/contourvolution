@@ -153,6 +153,7 @@ const map = new maplibregl.Map({
   bearing: initState?.bearing ?? 0,
   pitch: initState?.pitch ?? 0,
   maxPitch: 75,
+  customAttribution: '<a href="https://mapterhorn.com/attribution" target="_blank">© Mapterhorn</a>',
 });
 window.map = map;
 window._tileParams = tileParams; // debug access
