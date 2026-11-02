@@ -1,8 +1,13 @@
 # Interrupted Contours
 
-
-
 Contour line experiments, generated dynamically using vector contours + vector hillshade (and data from the [Mapterhorn](https://mapterhorn.com/) DEM tiles)
+
+| | |
+|---|---|
+| ![Shadow Density — Colorado River / Grand Canyon](public/images/colorado-river.png) | ![Minimum Spacing — Mt Baker / Kulshan](public/images/mt-baker.png) |
+| *Shadow Density — Colorado River / Grand Canyon* | *Minimum Spacing — Mt Baker / Kulshan* |
+| ![Standard — Big Island, Hawaiʻi](public/images/hawaii.png) | ![Minimum Spacing — Matterhorn / Breuil-Cervinia](public/images/matterhorn.png) |
+| *Standard — Big Island, Hawaiʻi* | *Minimum Spacing — Matterhorn / Breuil-Cervinia* |
 
 Based on the [maplibre-contour demo](makewithmaplibre.com/plugins/maplibre-contour). Both
 contour lines and the hillshade are produced in the browser, per tile, as vector
