@@ -18,7 +18,7 @@ const tileParams = {
   // "density":    shadow-density hatching (see src/shadow-density.js)
   // "minspacing": priority-ordered lines with a minimum screen-space buffer
   // "standard":   regular minor/major contours from `thresholds`
-  contourMode: "density",
+  contourMode: "minspacing",
   denseInterval: 20, // metres between the densest lines at z12; doubles per zoom level out
   halfDensityFrom: 1, // every 2nd line appears from this shadow class (1-based shadowLevels)
   fullDensityFrom: 2, // every line appears from this shadow class
