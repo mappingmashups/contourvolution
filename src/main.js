@@ -466,6 +466,20 @@ function buildGui() {
 }
 
 function buildPanelButtons() {
+  // Collapse toggle
+  const infoPanel  = document.getElementById("info");
+  const infoToggle = document.getElementById("info-toggle");
+  if (window.innerWidth < 600) infoPanel.classList.add("collapsed");
+  function syncToggle() {
+    infoToggle.textContent = infoPanel.classList.contains("collapsed") ? "▸" : "▾";
+    infoToggle.title = infoPanel.classList.contains("collapsed") ? "Expand panel" : "Collapse panel";
+  }
+  syncToggle();
+  infoToggle.addEventListener("click", () => {
+    infoPanel.classList.toggle("collapsed");
+    syncToggle();
+  });
+
   // Mode buttons
   const modeBtns = document.querySelectorAll(".mode-btn");
   function syncModeBtns() {

@@ -24,9 +24,20 @@
         box-shadow: 0 1px 6px rgb(0 0 0 / 0.15);
         color: #2a2a2a;
       }
-      #info h1 {
-        margin: 0 0 6px; font-size: 15px; font-weight: 700; letter-spacing: 0.01em;
+      #info .info-header {
+        display: flex; align-items: center; justify-content: space-between; gap: 8px;
       }
+      #info h1 {
+        margin: 0; font-size: 15px; font-weight: 700; letter-spacing: 0.01em; flex: 1;
+      }
+      #info .toggle-btn {
+        flex-shrink: 0; background: none; border: none; cursor: pointer;
+        font-size: 16px; line-height: 1; color: #888; padding: 0 2px;
+        transition: color 0.15s;
+      }
+      #info .toggle-btn:hover { color: #333; }
+      #info .info-body { margin-top: 8px; }
+      #info.collapsed .info-body { display: none; }
       #info p { margin: 0 0 8px; }
       #info p:last-child { margin: 0; }
       #info strong { font-weight: 600; color: #1a1a1a; }
@@ -72,33 +83,38 @@
     <div id="map"></div>
     <div id="status"></div>
     <div id="info">
-      <h1>Interrupted Contours</h1>
-      <p>On maps, <em>"contours"</em> are <em>unbroken</em> curves showing lines of equal
-      elevation. But… what if they <em>weren't</em> continuous? What if discontinuous contour
-      lines could give us a different perspective on the landscape?</p>
-      <div class="modes">
-        <button class="mode-btn" data-mode="density">
-          <span class="mode-name">Shadow Density</span> — line density encodes terrain
-          steepness: more lines in shadow, fewer in light.
-        </button>
-        <button class="mode-btn" data-mode="minspacing">
-          <span class="mode-name">Minimum Spacing</span> — contours are drawn in priority
-          order (by elevation subdivision) and masked wherever they crowd together. Lines in
-          shadow get thicker to fill the space.
-        </button>
+      <div class="info-header">
+        <h1>Interrupted Contours</h1>
+        <button class="toggle-btn" id="info-toggle" title="Toggle panel">▾</button>
       </div>
-      <button class="animate-btn" id="animate-light-btn">Animate light ↺</button>
-      <p>Made for the <a href="https://30daymapchallenge.com/" target="_blank">#30DayMapChallenge</a>
-      Day 2: Lines. Concept and direction by
-      <a href="https://mappingmashups.net/" target="_blank">Alan McConchie</a>,
-      code implemented by <a href="https://claude.ai" target="_blank">Claude</a>.</p>
-      <p><a href="https://github.com/mappingmashups/contourvolution#readme"
-        target="_blank">Read more on GitHub →</a></p>
-      <div class="search">
-        <input id="geocoder-input" type="text" placeholder="Search for a place…" />
-        <button id="geocoder-btn">Go</button>
+      <div class="info-body">
+        <p>On maps, <em>"contours"</em> are <em>unbroken</em> curves showing lines of equal
+        elevation. But… what if they <em>weren't</em> continuous? What if discontinuous contour
+        lines could give us a different perspective on the landscape?</p>
+        <div class="modes">
+          <button class="mode-btn" data-mode="density">
+            <span class="mode-name">Shadow Density</span> — line density encodes terrain
+            steepness: more lines in shadow, fewer in light.
+          </button>
+          <button class="mode-btn" data-mode="minspacing">
+            <span class="mode-name">Minimum Spacing</span> — contours are drawn in priority
+            order (by elevation subdivision) and masked wherever they crowd together. Lines in
+            shadow get thicker to fill the space.
+          </button>
+        </div>
+        <button class="animate-btn" id="animate-light-btn">Animate light ↺</button>
+        <p>Made for the <a href="https://30daymapchallenge.com/" target="_blank">#30DayMapChallenge</a>
+        Day 2: Lines. Concept and direction by
+        <a href="https://mappingmashups.net/" target="_blank">Alan McConchie</a>,
+        code implemented by <a href="https://claude.ai" target="_blank">Claude</a>.</p>
+        <p><a href="https://github.com/mappingmashups/contourvolution#readme"
+          target="_blank">Read more on GitHub →</a></p>
+        <div class="search">
+          <input id="geocoder-input" type="text" placeholder="Search for a place…" />
+          <button id="geocoder-btn">Go</button>
+        </div>
+        <div class="search-error" id="geocoder-error" hidden></div>
       </div>
-      <div class="search-error" id="geocoder-error" hidden></div>
     </div>
     <script type="module" src="/src/main.js"></script>
   </body>
