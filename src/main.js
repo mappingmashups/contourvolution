@@ -490,6 +490,37 @@ function buildPanelButtons() {
       animBtn.classList.add("active");
     }
   });
+
+  // Geocoder (Nominatim)
+  const geocoderInput = document.getElementById("geocoder-input");
+  const geocoderBtn   = document.getElementById("geocoder-btn");
+  const geocoderError = document.getElementById("geocoder-error");
+
+  async function geocode() {
+    const q = geocoderInput.value.trim();
+    if (!q) return;
+    geocoderError.hidden = true;
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1`,
+        { headers: { "Accept-Language": "en" } },
+      );
+      const data = await res.json();
+      if (!data.length) {
+        geocoderError.textContent = "Place not found.";
+        geocoderError.hidden = false;
+        return;
+      }
+      const [s, n, w, e] = data[0].boundingbox.map(Number);
+      map.fitBounds([[w, s], [e, n]], { padding: 40, maxZoom: 14 });
+    } catch {
+      geocoderError.textContent = "Search failed — check your connection.";
+      geocoderError.hidden = false;
+    }
+  }
+
+  geocoderBtn.addEventListener("click", geocode);
+  geocoderInput.addEventListener("keydown", e => { if (e.key === "Enter") geocode(); });
 }
 
 const statusEl = document.getElementById("status");

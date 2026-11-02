@@ -45,6 +45,21 @@
       }
       #info .animate-btn:hover { background: rgb(0 0 0 / 0.08); }
       #info .animate-btn.active { background: rgb(74 127 165 / 0.12); border-color: #4a7fa5; }
+      #info .search { display: flex; gap: 6px; margin-bottom: 10px; }
+      #info .search input {
+        flex: 1; padding: 6px 8px; border-radius: 4px; border: 1.5px solid #d0ccc4;
+        font: inherit; font-size: 13px; background: #fff; color: inherit;
+        outline: none;
+      }
+      #info .search input:focus { border-color: #4a7fa5; }
+      #info .search input::placeholder { color: #aaa; }
+      #info .search button {
+        padding: 6px 10px; border-radius: 4px; border: 1.5px solid #d0ccc4;
+        background: #fff; cursor: pointer; font: inherit; font-size: 13px; color: inherit;
+        transition: background 0.15s;
+      }
+      #info .search button:hover { background: rgb(0 0 0 / 0.06); }
+      #info .search-error { font-size: 12px; color: #b04040; margin: -6px 0 6px; }
     </style>
   </head>
   <body>
@@ -52,6 +67,11 @@
     <div id="status"></div>
     <div id="info">
       <h1>Interrupted Contours</h1>
+      <div class="search">
+        <input id="geocoder-input" type="text" placeholder="Search for a place…" />
+        <button id="geocoder-btn">Go</button>
+      </div>
+      <div class="search-error" id="geocoder-error" hidden></div>
       <p>On maps, <em>"contours"</em> are <em>unbroken</em> curves showing lines of equal
       elevation. But… what if they <em>weren't</em> continuous? What if discontinuous contour
       lines could give us a different perspective on the landscape?</p>
