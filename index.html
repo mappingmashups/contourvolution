@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Vector Contours + Hillshade</title>
+    <title>Interrupted Contours</title>
     <style>
       html, body, #map { margin: 0; height: 100%; }
       body { background: #f4f1ea; font-family: system-ui, sans-serif; }
@@ -26,26 +26,47 @@
       #info strong { font-weight: 600; color: #1a1a1a; }
       #info a { color: #4a7fa5; text-decoration: none; }
       #info a:hover { text-decoration: underline; }
-      #info .modes { margin: 8px 0; padding: 8px 10px; background: rgb(0 0 0 / 0.04);
-        border-radius: 4px; display: flex; flex-direction: column; gap: 6px; }
+      #info .modes { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+      #info .mode-btn {
+        display: block; width: 100%; text-align: left; cursor: pointer;
+        padding: 8px 10px; border-radius: 4px; border: 1.5px solid transparent;
+        background: rgb(0 0 0 / 0.04); font: inherit; font-size: 13px;
+        color: inherit; line-height: 1.5; transition: background 0.15s, border-color 0.15s;
+      }
+      #info .mode-btn:hover { background: rgb(0 0 0 / 0.08); }
+      #info .mode-btn.active { background: rgb(74 127 165 / 0.12); border-color: #4a7fa5; }
       #info .mode-name { font-weight: 600; }
+      #info .animate-btn {
+        display: block; width: 100%; text-align: center; cursor: pointer;
+        margin-top: 6px; padding: 6px 10px; border-radius: 4px;
+        border: 1.5px solid transparent; background: rgb(0 0 0 / 0.04);
+        font: inherit; font-size: 13px; color: inherit;
+        transition: background 0.15s, border-color 0.15s;
+      }
+      #info .animate-btn:hover { background: rgb(0 0 0 / 0.08); }
+      #info .animate-btn.active { background: rgb(74 127 165 / 0.12); border-color: #4a7fa5; }
     </style>
   </head>
   <body>
     <div id="map"></div>
     <div id="status"></div>
     <div id="info">
-      <h1>Contourvolution</h1>
-      <p>Contour lines and hillshade generated entirely in the browser, per tile, as vector
-      geometry — no pre-rendered rasters. Elevation data from
-      <a href="https://mapterhorn.com" target="_blank">Mapterhorn</a>.</p>
-      <p>Try the two experimental contour modes in the panel →</p>
+      <h1>Interrupted Contours</h1>
+      <p>On maps, <em>"contours"</em> are <em>unbroken</em> curves showing lines of equal
+      elevation. But… what if they <em>weren't</em> continuous? What if discontinuous contour
+      lines could give us a different perspective on the landscape?</p>
       <div class="modes">
-        <div><span class="mode-name">Shadow Density</span> — line density encodes terrain
-        steepness: more lines in shadow, fewer in light.</div>
-        <div><span class="mode-name">Minimum Spacing</span> — contours are drawn in priority
-        order (by elevation subdivision) and masked wherever they crowd together.</div>
+        <button class="mode-btn" data-mode="density">
+          <span class="mode-name">Shadow Density</span> — line density encodes terrain
+          steepness: more lines in shadow, fewer in light.
+        </button>
+        <button class="mode-btn" data-mode="minspacing">
+          <span class="mode-name">Minimum Spacing</span> — contours are drawn in priority
+          order (by elevation subdivision) and masked wherever they crowd together. Lines in
+          shadow get thicker to fill the space.
+        </button>
       </div>
+      <button class="animate-btn" id="animate-light-btn">Animate light ↺</button>
       <p><a href="https://github.com/mappingmashups/contourvolution#readme"
         target="_blank">Read more on GitHub →</a></p>
     </div>

@@ -343,6 +343,7 @@ map.on("load", () => {
   });
 
   buildGui();
+  buildPanelButtons();
 });
 
 // Four style layers, one per shade class, for min-spacing mode.
@@ -372,13 +373,21 @@ function contourWidth() {
 }
 
 // --- Controls
+let densityControls = [], msControls = [];
+
+function updateModeControls() {
+  const mode = tileParams.contourMode;
+  densityControls.forEach(ctrl => mode === "density" ? ctrl.show() : ctrl.hide());
+  msControls.forEach(ctrl => mode === "minspacing" ? ctrl.show() : ctrl.hide());
+}
+
 function buildGui() {
   const gui = new GUI({ title: "Terrain" });
   const paint = (layer, prop) => (value) => map.setPaintProperty(layer, prop, value);
 
   const c = gui.addFolder("Contours");
   c.add(tileParams, "contours").name("generate").onChange(rebuild);
-  const modeCtrl = c.add(tileParams, "contourMode", {
+  c.add(tileParams, "contourMode", {
     "Shadow Density": "density",
     "Minimum Spacing": "minspacing",
     "Standard": "standard",
@@ -386,14 +395,14 @@ function buildGui() {
 
   // Shadow-density controls
   const classes = Object.fromEntries(tileParams.shadowLevels.map((_, i) => [`shadow ${i + 1}`, i + 1]));
-  const densityControls = [
+  densityControls = [
     c.add(tileParams, "denseInterval", 2, 100, 1).name("dense interval @z12 (m)").onChange(rebuild),
     c.add(tileParams, "halfDensityFrom", classes).name("every 2nd line from").onChange(rebuild),
     c.add(tileParams, "fullDensityFrom", classes).name("every line from").onChange(rebuild),
   ];
 
   // Minimum-spacing controls
-  const msControls = [
+  msControls = [
     c.add(tileParams, "minSpacingInterval", 1, 200, 1).name("interval @z12 (m)").onChange(rebuild),
     c.add(tileParams, "midpoint", 0, 8000, 100).name("midpoint (m)").onChange(rebuild),
     c.add(tileParams, "spacingBuffer", 1, 20, 0.5).name("spacing buffer (px)").onChange(() => {
@@ -420,11 +429,6 @@ function buildGui() {
     map.setPaintProperty("contour-labels", "text-color", v);
   });
 
-  function updateModeControls() {
-    const mode = tileParams.contourMode;
-    densityControls.forEach(ctrl => mode === "density" ? ctrl.show() : ctrl.hide());
-    msControls.forEach(ctrl => mode === "minspacing" ? ctrl.show() : ctrl.hide());
-  }
   updateModeControls();
 
   const light = gui.addFolder("Hillshade · light");
@@ -433,10 +437,6 @@ function buildGui() {
   altitudeCtrl = light.add(tileParams, "altitude", 10, 80, 1).onChange(rebuild);
   light.add(tileParams, "exaggeration", 0.25, 5, 0.05).onChange(rebuild);
   light.add(tileParams, "zoomBoost", 1, 2, 0.05).name("low-zoom boost").onChange(rebuild);
-  const animToggle = { animate: false };
-  light.add(animToggle, "animate").name("animate light").onChange((v) => {
-    if (v) startLightAnimation(); else stopLightAnimation();
-  });
 
   const bands = gui.addFolder("Hillshade · bands");
   tileParams.shadowLevels.forEach((_, i) =>
@@ -462,6 +462,34 @@ function buildGui() {
   st.add(styleParams, "rasterHillshade").name("compare raster").onChange((v) =>
     map.setLayoutProperty("raster-hillshade", "visibility", v ? "visible" : "none"),
   );
+}
+
+function buildPanelButtons() {
+  // Mode buttons
+  const modeBtns = document.querySelectorAll(".mode-btn");
+  function syncModeBtns() {
+    modeBtns.forEach(btn => btn.classList.toggle("active", btn.dataset.mode === tileParams.contourMode));
+  }
+  syncModeBtns();
+  modeBtns.forEach(btn => btn.addEventListener("click", () => {
+    tileParams.contourMode = btn.dataset.mode;
+    syncModeBtns();
+    updateModeControls();
+    rebuild();
+    writeHash();
+  }));
+
+  // Animate light button
+  const animBtn = document.getElementById("animate-light-btn");
+  animBtn.addEventListener("click", () => {
+    if (animInterval) {
+      stopLightAnimation();
+      animBtn.classList.remove("active");
+    } else {
+      startLightAnimation();
+      animBtn.classList.add("active");
+    }
+  });
 }
 
 const statusEl = document.getElementById("status");
